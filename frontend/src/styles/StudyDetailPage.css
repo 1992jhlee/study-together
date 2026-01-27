@@ -1,0 +1,461 @@
+.study-detail-page {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.study-detail-header {
+  margin-bottom: 30px;
+}
+
+.back-btn {
+  padding: 8px 16px;
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-size: 16px;
+}
+
+.error-message {
+  background-color: #ffebee;
+  color: #c62828;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  border-left: 4px solid #c62828;
+}
+
+/* ==================== Study Info ====================*/
+.study-info-card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 30px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.study-info-card h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #333;
+}
+
+.study-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  gap: 15px;
+}
+
+.study-description {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #555;
+  margin: 0 0 20px 0;
+}
+
+/* ==================== Study Edit Form ====================*/
+.study-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.study-edit-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.study-edit-form label {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.study-edit-form input,
+.study-edit-form textarea {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.study-edit-form input:focus,
+.study-edit-form textarea:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.study-edit-form textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-edit {
+  background-color: #ff9800;
+  color: white;
+  padding: 8px 16px;
+}
+
+.btn-edit:hover {
+  background-color: #e68900;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: #5a6268;
+}
+
+.study-meta {
+  display: flex;
+  gap: 20px;
+  font-size: 13px;
+  color: #666;
+  flex-wrap: wrap;
+}
+
+.creator-info {
+  font-weight: 500;
+  color: #4CAF50;
+}
+
+.create-date {
+  color: #999;
+}
+
+/* ==================== Members Section ====================*/
+.members-section {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 25px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.members-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 15px;
+}
+
+.members-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #333;
+}
+
+.members-header .btn {
+  white-space: nowrap;
+}
+
+/* ==================== Add Member Form ====================*/
+.add-member-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  padding-bottom: 25px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.add-member-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.add-member-form input:focus {
+  outline: none;
+  border-color: #4CAF50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.add-member-form input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.add-member-form .btn {
+  white-space: nowrap;
+}
+
+/* ==================== Members List ====================*/
+.members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty-message {
+  text-align: center;
+  color: #999;
+  padding: 20px;
+  font-style: italic;
+}
+
+.member-card {
+  background-color: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 4px;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.member-card:hover {
+  background-color: #f5f5f5;
+  border-color: #e0e0e0;
+}
+
+.member-info {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex: 1;
+}
+
+.member-username {
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.member-role {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.member-role.admin {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.member-role.member {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.member-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.join-date {
+  font-size: 12px;
+  color: #999;
+  white-space: nowrap;
+}
+
+.btn-remove {
+  background-color: transparent;
+  color: #999;
+  padding: 4px 8px;
+  font-size: 16px;
+  border: 1px solid transparent;
+}
+
+.btn-remove:hover {
+  background-color: #ffebee;
+  color: #c62828;
+  border-color: #ffcdd2;
+}
+
+/* ==================== Button Styles ====================*/
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #45a049;
+  transform: translateY(-2px);
+}
+
+.btn-primary:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #c82333;
+}
+
+.btn-danger:disabled {
+  background-color: #e4606d;
+  cursor: not-allowed;
+}
+
+/* ==================== Danger Zone ====================*/
+.danger-zone {
+  background: white;
+  border: 2px solid #dc3545;
+  border-radius: 6px;
+  padding: 25px;
+  margin-top: 30px;
+  box-shadow: 0 2px 4px rgba(220, 53, 69, 0.1);
+}
+
+.danger-zone h2 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  color: #dc3545;
+}
+
+.danger-zone-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.danger-zone-content p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.delete-confirm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.delete-confirm-form .warning-text {
+  margin: 0;
+  color: #dc3545;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.delete-confirm-form .study-name-hint {
+  margin: 0;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+.delete-confirm-form input {
+  padding: 12px;
+  border: 2px solid #dc3545;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+}
+
+.delete-confirm-form input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.2);
+}
+
+.delete-confirm-actions {
+  display: flex;
+  gap: 10px;
+}
+
+/* ==================== Responsive ====================*/
+@media (max-width: 600px) {
+  .study-detail-page {
+    padding: 15px;
+  }
+
+  .study-info-card {
+    padding: 15px;
+  }
+
+  .study-info-card h1 {
+    font-size: 22px;
+  }
+
+  .study-meta {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .members-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .members-header .btn {
+    width: 100%;
+  }
+
+  .add-member-form {
+    flex-direction: column;
+  }
+
+  .add-member-form input,
+  .add-member-form .btn {
+    width: 100%;
+  }
+
+  .member-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .member-info {
+    flex-wrap: wrap;
+  }
+
+  .join-date {
+    margin-top: 10px;
+  }
+
+  .members-section {
+    padding: 15px;
+  }
+}
