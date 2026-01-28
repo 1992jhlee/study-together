@@ -1,748 +1,395 @@
-# Study Together API 명세서
+# API Specification
 
-**작성일**: 2026-01-22  
-**API 버전**: v1  
-**Base URL**: `http://localhost:8000/api` (로컬) / `https://api.studytogether.com` (배포)
+Base URL: `/api`
 
----
+## 인증 (Auth)
 
-## 목차
-1. [인증 (Authentication)](#인증-authentication)
-2. [스터디 관리 (Studies)](#스터디-관리-studies)
-3. [게시물 관리 (Posts)](#게시물-관리-posts)
-4. [댓글 관리 (Comments)](#댓글-관리-comments)
-5. [이슈 관리 (Issues)](#이슈-관리-issues)
-6. [에러 처리](#에러-처리)
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| POST | `/auth/register` | 회원가입 | - |
+| POST | `/auth/login` | 로그인 | - |
+| POST | `/auth/logout` | 로그아웃 | O |
+| GET | `/auth/me` | 현재 사용자 정보 | O |
+| POST | `/auth/forgot-password` | 비밀번호 재설정 이메일 발송 | - |
+| POST | `/auth/reset-password` | 비밀번호 재설정 | - |
 
----
-
-## 인증 (Authentication)
-
-### 1. 회원가입
-**POST** `/auth/register`
-
-**요청 (Request):**
+### POST /auth/register
 ```json
-{
-  "email": "user@example.com",
-  "username": "john_doe",
-  "password": "securepassword123"
-}
+// Request
+{ "email": "user@example.com", "username": "홍길동", "password": "12345678" }
+
+// Response 201
+{ "access_token": "...", "token_type": "bearer", "user": { "id": 1, "email": "...", "username": "..." } }
 ```
 
-**응답 (Response):**
-- **200 OK**
+### POST /auth/login
 ```json
-{
-  "id": 1,
-  "email": "user@example.com",
-  "username": "john_doe",
-  "created_at": "2026-01-22T10:00:00"
-}
+// Request
+{ "email": "user@example.com", "password": "12345678" }
+
+// Response 200
+{ "access_token": "...", "token_type": "bearer", "user": { "id": 1, "email": "...", "username": "..." } }
 ```
 
-- **400 Bad Request** - 이메일 중복 또는 입력값 검증 실패
+### POST /auth/forgot-password
 ```json
-{
-  "detail": "Email already registered"
-}
+// Request
+{ "email": "user@example.com" }
+
+// Response 200
+{ "message": "비밀번호 재설정 이메일이 발송되었습니다", "reset_link": "..." }
 ```
 
----
-
-### 2. 로그인
-**POST** `/auth/login`
-
-**요청 (Request):**
+### POST /auth/reset-password
 ```json
-{
-  "email": "user@example.com",
-  "password": "securepassword123"
-}
-```
+// Request
+{ "token": "reset-token-here", "new_password": "newpassword123" }
 
-**응답 (Response):**
-- **200 OK**
-```json
-{
-  "access_token": "eyJhbGciOiJIUzI1NiIs...",
-  "token_type": "bearer",
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "username": "john_doe"
-  }
-}
-```
-
-- **401 Unauthorized** - 이메일 또는 비밀번호 오류
-```json
-{
-  "detail": "Invalid email or password"
-}
+// Response 200
+{ "message": "비밀번호가 성공적으로 변경되었습니다" }
 ```
 
 ---
 
-### 3. 로그아웃
-**POST** `/auth/logout`
+## 스터디 (Studies)
 
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| GET | `/studies` | 스터디 목록 조회 | 선택 |
+| GET | `/studies/{study_id}` | 스터디 상세 조회 | - |
+| POST | `/studies` | 스터디 생성 | O |
+| PUT | `/studies/{study_id}` | 스터디 수정 (생성자) | O |
+| DELETE | `/studies/{study_id}` | 스터디 삭제 (생성자) | O |
 
-**응답 (Response):**
-- **200 OK**
+### GET /studies
+```
+Query: skip=0, limit=10
+```
 ```json
-{
-  "message": "Successfully logged out"
-}
-```
-
----
-
-## 스터디 관리 (Studies)
-
-### 1. 스터디 목록 조회
-**GET** `/studies`
-
-**쿼리 파라미터 (Query Parameters):**
-- `skip` (optional): 스킵할 항목 수 (기본값: 0)
-- `limit` (optional): 반환할 최대 항목 수 (기본값: 10)
-
-**응답 (Response):**
-- **200 OK**
-```json
+// Response 200
 {
   "total": 5,
   "items": [
     {
       "id": 1,
-      "name": "Python 스터디",
-      "description": "Python 심화 스터디",
+      "name": "DSO 스터디",
+      "description": "DevSecOps 학습",
       "creator_id": 1,
-      "creator": {
-        "id": 1,
-        "username": "john_doe"
-      },
+      "created_at": "2026-01-28T...",
+      "updated_at": "2026-01-28T...",
       "member_count": 3,
-      "created_at": "2026-01-22T10:00:00"
+      "is_member": true,
+      "has_pending_request": false
     }
   ]
 }
 ```
 
----
-
-### 2. 스터디 상세 조회
-**GET** `/studies/{study_id}`
-
-**응답 (Response):**
-- **200 OK**
+### POST /studies
 ```json
+// Request
+{ "name": "스터디 이름", "description": "스터디 설명 (선택)" }
+
+// Response 201
+{ "id": 1, "name": "...", "description": "...", "creator_id": 1, ... }
+```
+- 생성자가 자동으로 admin 멤버에 추가됨
+- 이름 중복 시 400 에러
+
+### GET /studies/{study_id}
+```json
+// Response 200
 {
   "id": 1,
-  "name": "Python 스터디",
-  "description": "Python 심화 스터디",
+  "name": "DSO 스터디",
+  "description": "...",
   "creator_id": 1,
-  "creator": {
-    "id": 1,
-    "username": "john_doe"
-  },
+  "creator": { "id": 1, "username": "admin" },
   "members": [
-    {
-      "id": 1,
-      "username": "john_doe",
-      "role": "admin",
-      "joined_at": "2026-01-22T10:00:00"
-    }
-  ],
-  "created_at": "2026-01-22T10:00:00"
-}
-```
-
-- **404 Not Found** - 스터디 없음
-```json
-{
-  "detail": "Study not found"
-}
-```
-
----
-
-### 3. 스터디 생성
-**POST** `/studies`
-
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-Content-Type: application/json
-```
-
-**요청 (Request):**
-```json
-{
-  "name": "Python 스터디",
-  "description": "Python 심화 스터디"
-}
-```
-
-**응답 (Response):**
-- **201 Created**
-```json
-{
-  "id": 1,
-  "name": "Python 스터디",
-  "description": "Python 심화 스터디",
-  "creator_id": 1,
-  "created_at": "2026-01-22T10:00:00"
-}
-```
-
-- **401 Unauthorized** - 인증 필요
-```json
-{
-  "detail": "Not authenticated"
-}
-```
-
----
-
-### 4. 스터디 수정
-**PUT** `/studies/{study_id}`
-
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
-
-**요청 (Request):**
-```json
-{
-  "name": "Python 심화 스터디",
-  "description": "Python 고급 기술 학습"
-}
-```
-
-**응답 (Response):**
-- **200 OK** - 수정 성공
-- **403 Forbidden** - 권한 없음 (생성자만 수정 가능)
-```json
-{
-  "detail": "Not authorized to update this study"
-}
-```
-
----
-
-### 5. 스터디 삭제
-**DELETE** `/studies/{study_id}`
-
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
-
-**응답 (Response):**
-- **204 No Content** - 삭제 성공
-- **403 Forbidden** - 권한 없음
-
----
-
-### 6. 스터디 멤버 추가
-**POST** `/studies/{study_id}/members`
-
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
-
-**요청 (Request):**
-```json
-{
-  "user_id": 2
-}
-```
-
-**응답 (Response):**
-- **201 Created**
-```json
-{
-  "id": 1,
-  "study_id": 1,
-  "user_id": 2,
-  "role": "member",
-  "joined_at": "2026-01-22T10:00:00"
-}
-```
-
----
-
-### 7. 스터디 멤버 조회
-**GET** `/studies/{study_id}/members`
-
-**응답 (Response):**
-- **200 OK**
-```json
-{
-  "total": 3,
-  "items": [
-    {
-      "id": 1,
-      "user_id": 1,
-      "username": "john_doe",
-      "role": "admin",
-      "joined_at": "2026-01-22T10:00:00"
-    }
+    { "id": 1, "username": "admin", "role": "admin", "joined_at": "..." }
   ]
 }
 ```
 
 ---
 
-## 게시물 관리 (Posts)
+## 멤버 관리 (Members)
 
-### 1. 게시물 목록 조회
-**GET** `/studies/{study_id}/posts`
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| GET | `/studies/{study_id}/members` | 멤버 목록 조회 | - |
+| POST | `/studies/{study_id}/members` | 멤버 추가 (이메일) | O |
+| DELETE | `/studies/{study_id}/members/{user_id}` | 멤버 삭제 (생성자) | O |
 
-**쿼리 파라미터 (Query Parameters):**
-- `skip` (optional): 스킵할 항목 수
-- `limit` (optional): 반환할 최대 항목 수
-
-**응답 (Response):**
-- **200 OK**
+### POST /studies/{study_id}/members
 ```json
+// Request
+{ "email": "member@example.com" }
+
+// Response 201
+{ "id": 1, "study_id": 1, "user_id": 2, "role": "member", "joined_at": "..." }
+```
+
+---
+
+## 가입 요청 (Join Requests)
+
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| POST | `/studies/{study_id}/join-requests` | 가입 요청 생성 | O |
+| GET | `/studies/{study_id}/join-requests` | 대기 중인 요청 조회 (관리자) | O |
+| PUT | `/studies/{study_id}/join-requests/{request_id}/approve` | 요청 승인 (관리자) | O |
+| PUT | `/studies/{study_id}/join-requests/{request_id}/reject` | 요청 거절 (관리자) | O |
+
+### POST /studies/{study_id}/join-requests
+```json
+// Response 201
+{ "id": 1, "status": "pending", "message": "가입 요청이 전송되었습니다" }
+```
+- 이미 멤버인 경우 400 에러
+- 이미 대기 중인 요청이 있는 경우 400 에러
+
+### GET /studies/{study_id}/join-requests
+```json
+// Response 200 (관리자만)
 {
-  "total": 5,
+  "total": 2,
   "items": [
     {
       "id": 1,
       "study_id": 1,
-      "title": "Python 기초 정리",
-      "author": {
-        "id": 1,
-        "username": "john_doe"
-      },
+      "user_id": 3,
+      "username": "홍길동",
+      "email": "hong@example.com",
+      "status": "pending",
+      "created_at": "2026-01-28T..."
+    }
+  ]
+}
+```
+
+### PUT /studies/{study_id}/join-requests/{request_id}/approve
+```json
+// Response 200
+{ "message": "가입 요청이 승인되었습니다" }
+```
+- 승인 시 자동으로 멤버(member 역할)에 추가됨
+
+### PUT /studies/{study_id}/join-requests/{request_id}/reject
+```json
+// Response 200
+{ "message": "가입 요청이 거절되었습니다" }
+```
+
+---
+
+## 게시물 (Posts)
+
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| GET | `/posts/study/{study_id}` | 스터디별 게시물 목록 (멤버만) | O |
+| GET | `/posts/{post_id}` | 게시물 상세 (댓글 포함) | - |
+| POST | `/posts?study_id={id}` | 게시물 작성 | O |
+| PUT | `/posts/{post_id}` | 게시물 수정 (작성자) | O |
+| DELETE | `/posts/{post_id}` | 게시물 삭제 (작성자) | O |
+
+### GET /posts/study/{study_id}
+```
+Query: skip=0, limit=10
+```
+```json
+// Response 200
+{
+  "total": 10,
+  "items": [
+    {
+      "id": 1,
+      "study_id": 1,
+      "title": "Week 1 정리",
+      "author": { "id": 1, "username": "admin" },
       "comment_count": 3,
-      "created_at": "2026-01-22T10:00:00"
+      "created_at": "..."
     }
   ]
 }
 ```
+- 스터디 멤버가 아니면 403 에러
 
----
-
-### 2. 게시물 상세 조회
-**GET** `/posts/{post_id}`
-
-**응답 (Response):**
-- **200 OK**
+### POST /posts?study_id={id}
 ```json
+// Request
+{ "title": "게시물 제목", "content": "Markdown 내용" }
+
+// Response 201
+{ "id": 1, "title": "...", "content": "...", ... }
+```
+- 스터디 멤버에게 알림 전송
+
+### GET /posts/{post_id}
+```json
+// Response 200
 {
   "id": 1,
-  "study_id": 1,
-  "title": "Python 기초 정리",
-  "content": "# Python 기초\n\n## 변수...",
-  "author": {
-    "id": 1,
-    "username": "john_doe"
-  },
-  "created_at": "2026-01-22T10:00:00",
-  "updated_at": "2026-01-22T10:00:00",
+  "title": "...",
+  "content": "...",
+  "author": { "id": 1, "username": "admin" },
   "comments": [
-    {
-      "id": 1,
-      "content": "좋은 정보 감사합니다!",
-      "author": {
-        "id": 2,
-        "username": "jane_doe"
-      },
-      "created_at": "2026-01-22T11:00:00"
-    }
-  ]
+    { "id": 1, "content": "...", "author": { ... }, "created_at": "..." }
+  ],
+  "comment_count": 3
 }
 ```
 
 ---
 
-### 3. 게시물 작성
-**POST** `/studies/{study_id}/posts`
+## 이슈 (Issues)
 
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| GET | `/issues/study/{study_id}` | 스터디별 이슈 목록 (멤버만) | O |
+| GET | `/issues/{issue_id}` | 이슈 상세 (댓글 포함) | - |
+| POST | `/issues?study_id={id}` | 이슈 생성 | O |
+| PUT | `/issues/{issue_id}` | 이슈 수정 (작성자) | O |
+| DELETE | `/issues/{issue_id}` | 이슈 삭제 (작성자) | O |
 
-**요청 (Request):**
+### GET /issues/study/{study_id}
+```
+Query: status_filter=Scheduled|In Progress|Closed (선택), skip=0, limit=100
+```
 ```json
-{
-  "title": "Python 기초 정리",
-  "content": "# Python 기초\n\n## 변수..."
-}
-```
-
-**응답 (Response):**
-- **201 Created**
-```json
-{
-  "id": 1,
-  "study_id": 1,
-  "title": "Python 기초 정리",
-  "content": "# Python 기초\n\n## 변수...",
-  "user_id": 1,
-  "created_at": "2026-01-22T10:00:00"
-}
-```
-
----
-
-### 4. 게시물 수정
-**PUT** `/posts/{post_id}`
-
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
-
-**요청 (Request):**
-```json
-{
-  "title": "Python 기초 정리 (업데이트)",
-  "content": "# Python 기초\n\n## 변수... (수정됨)"
-}
-```
-
-**응답 (Response):**
-- **200 OK** - 수정 성공
-- **403 Forbidden** - 권한 없음 (작성자만 수정 가능)
-
----
-
-### 5. 게시물 삭제
-**DELETE** `/posts/{post_id}`
-
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
-
-**응답 (Response):**
-- **204 No Content** - 삭제 성공
-- **403 Forbidden** - 권한 없음
-
----
-
-## 댓글 관리 (Comments)
-
-### 1. 댓글 작성
-**POST** `/posts/{post_id}/comments`
-
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
-
-**요청 (Request):**
-```json
-{
-  "content": "좋은 정보 감사합니다!"
-}
-```
-
-**응답 (Response):**
-- **201 Created**
-```json
-{
-  "id": 1,
-  "post_id": 1,
-  "user_id": 2,
-  "content": "좋은 정보 감사합니다!",
-  "created_at": "2026-01-22T11:00:00"
-}
-```
-
----
-
-### 2. 댓글 수정
-**PUT** `/comments/{comment_id}`
-
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
-
-**요청 (Request):**
-```json
-{
-  "content": "정말 좋은 정보 감사합니다!"
-}
-```
-
-**응답 (Response):**
-- **200 OK** - 수정 성공
-- **403 Forbidden** - 권한 없음 (작성자만 수정 가능)
-
----
-
-### 3. 댓글 삭제
-**DELETE** `/comments/{comment_id}`
-
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
-
-**응답 (Response):**
-- **204 No Content** - 삭제 성공
-- **403 Forbidden** - 권한 없음
-
----
-
-## 이슈 관리 (Issues)
-
-### 1. 이슈 목록 조회 (메인 보드)
-**GET** `/studies/{study_id}/issues`
-
-**쿼리 파라미터 (Query Parameters):**
-- `status` (optional): 상태 필터 (Open, In Progress, Closed)
-- `skip` (optional): 스킵할 항목 수
-- `limit` (optional): 반환할 최대 항목 수
-
-**응답 (Response):**
-- **200 OK**
-```json
+// Response 200
 {
   "total": 5,
   "items": [
     {
       "id": 1,
+      "title": "Sprint 1",
+      "status": "In Progress",
+      "start_date": "2026-01-20",
+      "end_date": "2026-02-03",
+      "author": { "id": 1, "username": "admin" },
+      "created_at": "..."
+    }
+  ]
+}
+```
+- 상태는 날짜 기반 자동 계산:
+  - `Scheduled`: start_date가 미래
+  - `In Progress`: start_date <= 오늘 <= end_date
+  - `Closed`: end_date가 과거
+
+### POST /issues?study_id={id}
+```json
+// Request
+{
+  "title": "이슈 제목",
+  "description": "이슈 설명",
+  "start_date": "2026-02-01",
+  "end_date": "2026-02-15"
+}
+
+// Response 201
+{ "id": 1, "title": "...", ... }
+```
+
+---
+
+## 댓글 (Comments)
+
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| POST | `/comments?post_id={id}` | 게시물에 댓글 작성 | O |
+| POST | `/comments?issue_id={id}` | 이슈에 댓글 작성 | O |
+| PUT | `/comments/{comment_id}` | 댓글 수정 (작성자) | O |
+| DELETE | `/comments/{comment_id}` | 댓글 삭제 (작성자) | O |
+
+### POST /comments?post_id={id}
+```json
+// Request
+{ "content": "댓글 내용" }
+
+// Response 201
+{ "id": 1, "content": "...", "user_id": 1, "post_id": 1, ... }
+```
+- 게시물/이슈 작성자에게 알림 전송
+
+---
+
+## 알림 (Notifications)
+
+| Method | Endpoint | 설명 | 인증 |
+|--------|----------|------|------|
+| GET | `/notifications` | 알림 목록 조회 | O |
+| GET | `/notifications/unread-count` | 읽지 않은 알림 수 | O |
+| PUT | `/notifications/read` | 알림 읽음 처리 | O |
+| DELETE | `/notifications/{notification_id}` | 알림 삭제 | O |
+| DELETE | `/notifications` | 전체 알림 삭제 | O |
+
+### GET /notifications
+```
+Query: skip=0, limit=20, unread_only=false
+```
+```json
+// Response 200
+{
+  "total": 10,
+  "unread_count": 3,
+  "items": [
+    {
+      "id": 1,
+      "notification_type": "post_comment",
+      "message": "홍길동님이 게시물에 댓글을 남겼습니다",
+      "post_id": 1,
       "study_id": 1,
-      "title": "Python 심화 학습 필요",
-      "status": "Open",
-      "author": {
-        "id": 1,
-        "username": "john_doe"
-      },
-      "created_at": "2026-01-22T10:00:00"
+      "from_user_id": 2,
+      "is_read": false,
+      "created_at": "..."
     }
   ]
 }
 ```
 
----
-
-### 2. 이슈 상세 조회
-**GET** `/issues/{issue_id}`
-
-**응답 (Response):**
-- **200 OK**
+### PUT /notifications/read
 ```json
-{
-  "id": 1,
-  "study_id": 1,
-  "title": "Python 심화 학습 필요",
-  "description": "리스트 컴프리헨션과 데코레이터 학습",
-  "status": "Open",
-  "author": {
-    "id": 1,
-    "username": "john_doe"
-  },
-  "created_at": "2026-01-22T10:00:00",
-  "updated_at": "2026-01-22T10:00:00"
-}
+// Request (특정 알림 읽음)
+{ "notification_ids": [1, 2, 3] }
+
+// Request (전체 읽음)
+{ "notification_ids": null }
+
+// Response 200
+{ "message": "..." }
 ```
 
 ---
 
-### 3. 이슈 생성
-**POST** `/studies/{study_id}/issues`
+## 공통
 
-**헤더 (Headers):**
+### 인증 헤더
 ```
-Authorization: Bearer {access_token}
+Authorization: Bearer <access_token>
 ```
 
-**요청 (Request):**
+### 에러 응답 형식
 ```json
-{
-  "title": "Python 심화 학습 필요",
-  "description": "리스트 컴프리헨션과 데코레이터 학습"
-}
+{ "detail": "에러 메시지" }
 ```
 
-**응답 (Response):**
-- **201 Created**
-```json
-{
-  "id": 1,
-  "study_id": 1,
-  "title": "Python 심화 학습 필요",
-  "description": "리스트 컴프리헨션과 데코레이터 학습",
-  "status": "Open",
-  "user_id": 1,
-  "created_at": "2026-01-22T10:00:00"
-}
+### HTTP 상태 코드
+
+| 코드 | 설명 |
+|------|------|
+| 200 | 성공 |
+| 201 | 생성 성공 |
+| 204 | 삭제 성공 (응답 본문 없음) |
+| 400 | 잘못된 요청 (중복, 유효성 검사 실패 등) |
+| 401 | 인증 필요 / 인증 실패 |
+| 403 | 권한 없음 |
+| 404 | 리소스 없음 |
+| 422 | 요청 데이터 검증 실패 |
+
+### 페이지네이션
+대부분의 목록 API는 `skip`과 `limit` 쿼리 파라미터를 지원합니다.
 ```
-
----
-
-### 4. 이슈 상태 변경
-**PUT** `/issues/{issue_id}`
-
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
-
-**요청 (Request):**
-```json
-{
-  "status": "In Progress"
-}
-```
-
-**응답 (Response):**
-- **200 OK**
-```json
-{
-  "id": 1,
-  "status": "In Progress",
-  "updated_at": "2026-01-22T12:00:00"
-}
-```
-
-**유효한 상태 전이:**
-- `Open` → `In Progress` → `Closed`
-- `Open` → `Closed` (직접 종료)
-- `In Progress` → `Open` (다시 열기)
-
----
-
-### 5. 이슈 삭제
-**DELETE** `/issues/{issue_id}`
-
-**헤더 (Headers):**
-```
-Authorization: Bearer {access_token}
-```
-
-**응답 (Response):**
-- **204 No Content** - 삭제 성공
-- **403 Forbidden** - 권한 없음 (생성자만 삭제 가능)
-
----
-
-## 에러 처리
-
-### 공통 에러 응답 형식
-
-**400 Bad Request** - 입력값 검증 실패
-```json
-{
-  "detail": "Validation error message"
-}
-```
-
-**401 Unauthorized** - 인증되지 않음
-```json
-{
-  "detail": "Not authenticated"
-}
-```
-
-**403 Forbidden** - 권한 없음
-```json
-{
-  "detail": "Not authorized"
-}
-```
-
-**404 Not Found** - 리소스 없음
-```json
-{
-  "detail": "Resource not found"
-}
-```
-
-**500 Internal Server Error** - 서버 에러
-```json
-{
-  "detail": "Internal server error"
-}
-```
-
----
-
-## 인증 토큰 사용법
-
-모든 보호된 엔드포인트는 `Authorization` 헤더에 JWT 토큰이 필요합니다.
-
-```
-Authorization: Bearer {access_token}
-```
-
-**예시:**
-```bash
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
-     http://localhost:8000/api/studies
-```
-
----
-
-## 페이지네이션
-
-목록 조회 API는 페이지네이션을 지원합니다.
-
-**쿼리 파라미터:**
-- `skip`: 스킵할 항목 수 (기본값: 0)
-- `limit`: 반환할 최대 항목 수 (기본값: 10)
-
-**예시:**
-```
-GET /api/studies?skip=0&limit=20
-```
-
-**응답:**
-```json
-{
-  "total": 100,
-  "items": [...]
-}
-```
-
----
-
-## 테스트 방법
-
-### Swagger UI (자동 생성)
-`http://localhost:8000/docs`에서 모든 API를 테스트할 수 있습니다.
-
-### cURL 예시
-
-**회원가입:**
-```bash
-curl -X POST http://localhost:8000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","username":"john_doe","password":"password123"}'
-```
-
-**로그인:**
-```bash
-curl -X POST http://localhost:8000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"password123"}'
-```
-
-**스터디 목록 조회:**
-```bash
-curl http://localhost:8000/api/studies
-```
-
-**스터디 생성 (인증 필요):**
-```bash
-curl -X POST http://localhost:8000/api/studies \
-  -H "Authorization: Bearer {token}" \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Python 스터디","description":"Python 심화 스터디"}'
+GET /api/studies?skip=0&limit=10
 ```

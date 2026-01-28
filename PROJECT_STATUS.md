@@ -1,119 +1,114 @@
-# Study Together 프로젝트 진행 상황
+# Project Status
 
-**최종 업데이트**: 2026-01-23
+## 배포 현황
 
----
+| 서비스 | 플랫폼 | URL | 상태 |
+|--------|--------|-----|------|
+| Frontend | Vercel | https://study-together-six.vercel.app | 운영 중 |
+| Backend | Koyeb | https://slimy-lenore-study-together-6a7ad071.koyeb.app | 운영 중 |
+| Database | Neon (PostgreSQL) | ap-southeast-1 (Singapore) | 운영 중 |
 
-## ✅ 완료된 작업
+- GitHub 자동 배포: main 브랜치 push 시 Koyeb(백엔드) + Vercel(프론트엔드) 자동 빌드/배포
 
-### Phase 1: 설계 & 초기 설정 ✓
+## 구현 완료 기능
 
-1. **프로젝트 폴더 구조 설계** ✓
-2. **Docker 환경 설정** ✓
-3. **Database 설계** ✓
-4. **FastAPI ORM 모델** ✓
-5. **Backend 초기 설정** ✓
-6. **Frontend 기본 구조** ✓
+### 인증 시스템
+- [x] 회원가입 (이메일, 사용자명, 비밀번호)
+- [x] 로그인/로그아웃 (JWT 토큰)
+- [x] 비밀번호 재설정 (이메일 전송)
+- [x] 인증 상태 유지 (localStorage + Axios 인터셉터)
 
-### Phase 2: Backend 개발 ✓
+### 스터디 관리
+- [x] 스터디 생성 (이름 중복 체크)
+- [x] 스터디 수정/삭제 (생성자만)
+- [x] 스터디 목록 조회 (모든 사용자)
+- [x] 스터디 상세 조회
 
-1. **API 명세 정의** ✓
-   - API_SPECIFICATION.md 작성 완료
+### 멤버 관리
+- [x] 멤버 초대 (관리자가 이메일로 추가)
+- [x] 멤버 삭제 (생성자만, 자기 자신 제외)
+- [x] 가입 요청 (비멤버가 스터디에 가입 요청)
+- [x] 가입 요청 승인/거절 (관리자)
 
-2. **인증 시스템 구현** ✓
-   - JWT 토큰 기반 인증
-   - 패스워드 해싱 (bcrypt)
-   - 회원가입/로그인/로그아웃 API
-   - 토큰 검증 미들웨어
+### 접근 제어
+- [x] 스터디 목록: 로그인 사용자 전체 조회 가능
+- [x] 이슈/게시물: 스터디 멤버만 접근 가능 (백엔드 + 프론트엔드)
+- [x] 비멤버: Study Info만 조회, View Posts 버튼 비활성화
+- [x] 가입 요청 대기 상태 표시
 
-3. **CRUD API 구현** ✓
-   - 스터디 API (생성/조회/수정/삭제/멤버관리)
-   - 게시물 API (생성/조회/수정/삭제)
-   - 댓글 API (생성/조회/수정/삭제)
-   - 이슈 API (생성/조회/수정/삭제/상태변경)
+### 게시물
+- [x] 게시물 작성/수정/삭제
+- [x] Markdown 렌더링
+- [x] 게시물별 댓글
 
-### Phase 3: Frontend 개발 ✓
+### 이슈
+- [x] 이슈 생성/수정/삭제
+- [x] 날짜 기반 자동 상태 계산 (Scheduled / In Progress / Closed)
+- [x] 상태별 필터링
+- [x] 이슈별 댓글
 
-1. **기본 구조 설정** ✓
-   - React Router 설정
-   - Axios API 연동
-   - Context API (AuthContext)
+### 알림
+- [x] 댓글 작성 시 게시물/이슈 작성자에게 알림
+- [x] 새 이슈 생성 시 스터디 멤버에게 알림
+- [x] 알림 벨 아이콘 + 읽지 않은 개수 배지
+- [x] 알림 읽음 처리 / 삭제
+- [x] 알림 클릭 시 관련 페이지로 이동
 
-2. **UI 컴포넌트 개발** ✓
-   - 네비게이션 바 (Layout.js)
-   - 로그인/회원가입 폼 (AuthPages.js)
-   - 메인 페이지 - 이슈 보드 (MainPage.js)
-   - 포스트 목록/상세/작성 페이지
-   - 스터디 상세 페이지
+### UI/UX
+- [x] 반응형 디자인 (모바일 대응)
+- [x] ErrorBoundary (에러 상세 정보 표시)
+- [x] Toast 알림 (성공/에러/경고)
+- [x] 로딩 스피너
 
-3. **기능 구현** ✓
-   - 회원가입/로그인
-   - 스터디 생성/수정/삭제
-   - 멤버 추가 (이메일로)
-   - 게시물 작성/수정/삭제
-   - 댓글 작성/삭제
-   - 이슈 상태 변경
+## DB 모델
 
----
+```
+User
+├── id, email, username, password
+├── password_reset_token, password_reset_expires
+└── created_at, updated_at
 
-## 🔧 버그 수정 내역 (2026-01-23)
+Study
+├── id, name, description, creator_id
+└── created_at, updated_at
 
-1. **StudyDetailPage 객체 렌더링 버그**
-   - 문제: `study.creator` 객체를 직접 렌더링하여 React 에러 발생
-   - 해결: `study.creator?.username`으로 수정
+StudyMember
+├── id, study_id, user_id, role (admin/member)
+└── joined_at
 
-2. **API 응답 일관성 문제**
-   - 문제: posts/comments의 author가 문자열로 반환 (스키마와 불일치)
-   - 해결: 모든 author 필드를 `{id, username}` 객체로 통일
+Post
+├── id, study_id, user_id, title, content
+└── created_at, updated_at
 
-3. **addMember API 불일치**
-   - 문제: 프론트엔드는 email 전송, 백엔드는 user_id 기대
-   - 해결: 백엔드에서 email로 사용자 조회 후 멤버 추가
+Issue
+├── id, study_id, user_id, title, description
+├── status, start_date, end_date
+└── created_at, updated_at
 
----
+Comment
+├── id, post_id (nullable), issue_id (nullable), user_id, content
+└── created_at, updated_at
 
-## 🚧 남은 작업
+Notification
+├── id, user_id, notification_type, message
+├── post_id, issue_id, study_id, from_user_id
+├── is_read
+└── created_at
 
-### 우선순위 높음
-- [ ] Issue 관리 UI (생성/수정/삭제 페이지)
-- [ ] 댓글 수정 기능 UI
+JoinRequest
+├── id, study_id, user_id, status (pending/approved/rejected)
+├── reviewed_at, reviewed_by
+└── created_at
+```
 
-### 우선순위 중간
-- [ ] Markdown 렌더링 (포스트 내용)
-- [ ] Error Boundary 컴포넌트
-- [ ] 폼 유효성 검사 강화
+## 해결된 이슈
 
-### 우선순위 낮음
-- [ ] 테스트 코드 작성
-- [ ] UI/UX 개선
-- [ ] 배포 (Vercel + Render)
-
----
-
-## 🛠️ 현재 상태
-
-- **Backend**: 모든 CRUD API 구현 완료
-- **Frontend**: 기본 기능 구현 완료, Issue UI 추가 필요
-- **Database**: Docker로 PostgreSQL 실행 중
-
----
-
-## 📋 다음 세션에서 시작할 작업
-
-1. **Issue 관리 UI 추가** ← 다음 작업
-2. 댓글 수정 기능 추가
-3. Markdown 렌더링 추가
-
----
-
-## 🎯 최종 목표
-
-- [x] 프로젝트 구조 설계
-- [x] Docker 환경 설정
-- [x] Database 설계 & ORM 모델
-- [x] API 명세 정의
-- [x] Backend 완전 구현
-- [x] Frontend 기본 구현
-- [ ] Issue 관리 UI 완성
-- [ ] 전체 통합 테스트
-- [ ] 배포
+| 이슈 | 원인 | 해결 |
+|------|------|------|
+| Koyeb 빌드 실패 | Dockerfile COPY 경로 (빌드 컨텍스트가 repo root) | `COPY backend/requirements.txt .` 로 수정 |
+| Vercel 빌드 실패 | react-scripts 5.0.1 + Node 22 호환성 | Node 20.x + `NODE_OPTIONS=--openssl-legacy-provider` |
+| 로그인 에러 메시지 안보임 | 401 인터셉터가 로그인 실패에도 리다이렉트 | auth 엔드포인트 제외 처리 |
+| 스터디 이름 중복 | 중복 체크 없음 | `create_study`에 이름 중복 체크 추가 |
+| 스터디 삭제 실패 | FK 제약조건 (Notification, Comment) | 관련 레코드 수동 삭제 후 스터디 삭제 |
+| 모바일 회원가입 크래시 | `alert()` 일부 인앱 브라우저에서 에러 | `navigate` state로 대체 |
+| 모바일 스터디 목록 안보임 | CSS `display: none` on sidebar | flex 레이아웃으로 변경 |
