@@ -313,7 +313,18 @@
   }
 
   .studies-sidebar {
-    display: none;
+    order: -1;
+  }
+
+  .studies-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .study-item {
+    flex: 1 1 auto;
+    min-width: 120px;
   }
 
   .page-header {
