@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from datetime import date
 
-from database import get_db, Issue, User, Study, Comment
+from database import get_db, Issue, User, Study, Comment, StudyMember
 from schemas import IssueCreate, IssueUpdate, IssueResponse, IssueDetailResponse
 from auth import get_current_user
 from notification_utils import notify_study_members
@@ -33,15 +33,11 @@ async def get_study_issues(
     status_filter: str = Query(None, pattern="^(Scheduled|In Progress|Closed)$"),
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    스터디 이슈 목록 조회 (메인 보드)
-
-    - **study_id**: 스터디 ID
-    - **status_filter**: 상태 필터 (Scheduled, In Progress, Closed) - 선택사항
-    - **skip**: 스킵할 항목 수
-    - **limit**: 반환할 최대 항목 수
+    스터디 이슈 목록 조회 (멤버만 가능)
     """
     study = db.query(Study).filter(Study.id == study_id).first()
 
@@ -49,6 +45,17 @@ async def get_study_issues(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Study not found"
+        )
+
+    # 멤버 여부 확인
+    is_member = db.query(StudyMember).filter(
+        StudyMember.study_id == study_id,
+        StudyMember.user_id == current_user.id
+    ).first()
+    if not is_member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="스터디 멤버만 이슈를 조회할 수 있습니다"
         )
 
     # 모든 이슈를 가져와서 상태를 계산

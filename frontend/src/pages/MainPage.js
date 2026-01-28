@@ -37,10 +37,12 @@ export const MainPage = () => {
     }
   };
 
-  // 스터디 선택 시 이슈 조회
+  // 스터디 선택 시 이슈 조회 (멤버만)
   useEffect(() => {
-    if (selectedStudy) {
+    if (selectedStudy && selectedStudy.is_member) {
       fetchIssues();
+    } else {
+      setIssues([]);
     }
   }, [selectedStudy, statusFilter]);
 
@@ -167,13 +169,15 @@ export const MainPage = () => {
                   <ReactMarkdown>{selectedStudy.description || ''}</ReactMarkdown>
                 </div>
                 <div className="study-actions">
-                  <button 
-                    className="btn btn-secondary"
-                    onClick={() => navigate(`/study/${selectedStudy.id}/posts`)}
-                  >
-                    📝 View Posts
-                  </button>
-                  <button 
+                  {selectedStudy.is_member && (
+                    <button
+                      className="btn btn-secondary"
+                      onClick={() => navigate(`/study/${selectedStudy.id}/posts`)}
+                    >
+                      📝 View Posts
+                    </button>
+                  )}
+                  <button
                     className="btn btn-secondary"
                     onClick={() => navigate(`/study/${selectedStudy.id}`)}
                   >
@@ -182,90 +186,99 @@ export const MainPage = () => {
                 </div>
               </div>
 
-              <div className="issues-header">
-                <div className="issues-filter">
-                  <button
-                    className={`filter-btn ${statusFilter === null ? 'active' : ''}`}
-                    onClick={() => setStatusFilter(null)}
-                  >
-                    All
-                  </button>
-                  <button
-                    className={`filter-btn ${statusFilter === 'Scheduled' ? 'active' : ''}`}
-                    onClick={() => setStatusFilter('Scheduled')}
-                  >
-                    Scheduled
-                  </button>
-                  <button
-                    className={`filter-btn ${statusFilter === 'In Progress' ? 'active' : ''}`}
-                    onClick={() => setStatusFilter('In Progress')}
-                  >
-                    In Progress
-                  </button>
-                  <button
-                    className={`filter-btn ${statusFilter === 'Closed' ? 'active' : ''}`}
-                    onClick={() => setStatusFilter('Closed')}
-                  >
-                    Closed
-                  </button>
-                </div>
-                <button
-                  className="btn btn-primary"
-                  onClick={() => navigate(`/study/${selectedStudy.id}/issues/create`)}
-                >
-                  + New Issue
-                </button>
-              </div>
-
-              <div className="issues-list">
-                {loading ? (
-                  <LoadingSpinner size="small" message="" />
-                ) : issues.length === 0 ? (
-                  <p className="empty-message">No issues in this status</p>
-                ) : (
-                  issues.map(issue => (
-                    <div
-                      key={issue.id}
-                      className={`issue-card status-${issue.status.replace(' ', '-').toLowerCase()}`}
-                      onClick={() => navigate(`/study/${selectedStudy.id}/issues/${issue.id}`)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <div className="issue-content">
-                        <h4>{issue.title}</h4>
-                        <div className="issue-meta">
-                          <span className="status-badge">{issue.status}</span>
-                          <span className="author">by {issue.author.username}</span>
-                          <span className="date">{new Date(issue.created_at).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-                      {user?.id === issue.author.id && (
-                        <div className="issue-actions">
-                          <button
-                            className="btn-icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/study/${selectedStudy.id}/issues/${issue.id}/edit`);
-                            }}
-                            title="Edit"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            className="btn-icon"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteIssue(issue.id);
-                            }}
-                            title="Delete"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      )}
+              {selectedStudy.is_member ? (
+                <>
+                  <div className="issues-header">
+                    <div className="issues-filter">
+                      <button
+                        className={`filter-btn ${statusFilter === null ? 'active' : ''}`}
+                        onClick={() => setStatusFilter(null)}
+                      >
+                        All
+                      </button>
+                      <button
+                        className={`filter-btn ${statusFilter === 'Scheduled' ? 'active' : ''}`}
+                        onClick={() => setStatusFilter('Scheduled')}
+                      >
+                        Scheduled
+                      </button>
+                      <button
+                        className={`filter-btn ${statusFilter === 'In Progress' ? 'active' : ''}`}
+                        onClick={() => setStatusFilter('In Progress')}
+                      >
+                        In Progress
+                      </button>
+                      <button
+                        className={`filter-btn ${statusFilter === 'Closed' ? 'active' : ''}`}
+                        onClick={() => setStatusFilter('Closed')}
+                      >
+                        Closed
+                      </button>
                     </div>
-                  ))
-                )}
-              </div>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => navigate(`/study/${selectedStudy.id}/issues/create`)}
+                    >
+                      + New Issue
+                    </button>
+                  </div>
+
+                  <div className="issues-list">
+                    {loading ? (
+                      <LoadingSpinner size="small" message="" />
+                    ) : issues.length === 0 ? (
+                      <p className="empty-message">No issues in this status</p>
+                    ) : (
+                      issues.map(issue => (
+                        <div
+                          key={issue.id}
+                          className={`issue-card status-${issue.status.replace(' ', '-').toLowerCase()}`}
+                          onClick={() => navigate(`/study/${selectedStudy.id}/issues/${issue.id}`)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          <div className="issue-content">
+                            <h4>{issue.title}</h4>
+                            <div className="issue-meta">
+                              <span className="status-badge">{issue.status}</span>
+                              <span className="author">by {issue.author.username}</span>
+                              <span className="date">{new Date(issue.created_at).toLocaleDateString()}</span>
+                            </div>
+                          </div>
+                          {user?.id === issue.author.id && (
+                            <div className="issue-actions">
+                              <button
+                                className="btn-icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/study/${selectedStudy.id}/issues/${issue.id}/edit`);
+                                }}
+                                title="Edit"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="btn-icon"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteIssue(issue.id);
+                                }}
+                                title="Delete"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="empty-state">
+                  <p>스터디 멤버만 이슈와 게시물을 볼 수 있습니다.</p>
+                  <p>Study Info에서 멤버 가입을 요청하세요.</p>
+                </div>
+              )}
             </>
           ) : (
             <div className="empty-state">

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 
-from database import get_db, Post, User, Study, Comment
+from database import get_db, Post, User, Study, Comment, StudyMember
 from schemas import (
     PostCreate, PostUpdate, PostResponse, PostDetailResponse, PostListItemResponse
 )
@@ -17,21 +17,29 @@ async def get_study_posts(
     study_id: int,
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    스터디별 게시물 목록 조회
-    
-    - **study_id**: 스터디 ID
-    - **skip**: 스킵할 항목 수
-    - **limit**: 반환할 최대 항목 수
+    스터디별 게시물 목록 조회 (멤버만 가능)
     """
     study = db.query(Study).filter(Study.id == study_id).first()
-    
+
     if not study:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Study not found"
+        )
+
+    # 멤버 여부 확인
+    is_member = db.query(StudyMember).filter(
+        StudyMember.study_id == study_id,
+        StudyMember.user_id == current_user.id
+    ).first()
+    if not is_member:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="스터디 멤버만 게시물을 조회할 수 있습니다"
         )
     
     total = db.query(Post).filter(Post.study_id == study_id).count()

@@ -8,7 +8,7 @@ from schemas import (
     StudyMemberCreate, StudyMemberResponse, StudyMemberWithUserResponse,
     PaginatedResponse
 )
-from auth import get_current_user
+from auth import get_current_user, get_current_user_optional
 
 router = APIRouter(prefix="/studies", tags=["studies"])
 
@@ -18,25 +18,33 @@ router = APIRouter(prefix="/studies", tags=["studies"])
 async def get_studies(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
+    current_user: User = Depends(get_current_user_optional),
     db: Session = Depends(get_db)
 ):
     """
     스터디 목록 조회
-    
+
     - **skip**: 스킵할 항목 수
     - **limit**: 반환할 최대 항목 수
     """
     total = db.query(Study).count()
     studies = db.query(Study).offset(skip).limit(limit).all()
-    
+
     items = []
     for study in studies:
         member_count = db.query(StudyMember).filter(StudyMember.study_id == study.id).count()
+        is_member = False
+        if current_user:
+            is_member = db.query(StudyMember).filter(
+                StudyMember.study_id == study.id,
+                StudyMember.user_id == current_user.id
+            ).first() is not None
         items.append({
             **StudyResponse.from_orm(study).dict(),
-            "member_count": member_count
+            "member_count": member_count,
+            "is_member": is_member
         })
-    
+
     return {"total": total, "items": items}
 
 
