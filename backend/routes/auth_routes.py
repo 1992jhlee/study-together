@@ -7,10 +7,12 @@ from database import SessionLocal, User, get_db
 from schemas import (
     UserCreate, UserLogin, UserResponse, Token,
     ForgotPasswordRequest, ForgotPasswordResponse,
-    ResetPasswordRequest, ResetPasswordResponse
+    ResetPasswordRequest, ResetPasswordResponse,
+    UserUpdateRequest
 )
 from auth import (
     hash_password,
+    verify_password,
     authenticate_user,
     create_access_token,
     get_current_user,
@@ -102,6 +104,42 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
     현재 로그인한 사용자 정보 조회
     """
     return current_user
+
+
+@router.put("/me", response_model=UserResponse)
+async def update_profile(
+    request: UserUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    회원 정보 수정
+
+    - **username**: 새로운 사용자명 (선택)
+    - **current_password**: 현재 비밀번호 (비밀번호 변경 시 필수)
+    - **new_password**: 새로운 비밀번호 (선택)
+    """
+    user = db.query(User).filter(User.id == current_user.id).first()
+
+    if request.username is not None:
+        user.username = request.username
+
+    if request.new_password:
+        if not request.current_password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="현재 비밀번호를 입력해주세요"
+            )
+        if not verify_password(request.current_password, user.password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="현재 비밀번호가 일치하지 않습니다"
+            )
+        user.password = hash_password(request.new_password)
+
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.post("/forgot-password", response_model=ForgotPasswordResponse)

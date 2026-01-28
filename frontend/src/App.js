@@ -15,6 +15,7 @@ import CreatePostPage from './pages/CreatePostPage';
 import StudyDetailPage from './pages/StudyDetailPage';
 import CreateIssuePage from './pages/CreateIssuePage';
 import IssueDetailPage from './pages/IssueDetailPage';
+import ProfilePage from './pages/ProfilePage';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -66,6 +67,10 @@ function AppContent() {
           <Route
             path="/study/:studyId/issues/:issueId/edit"
             element={<CreateIssuePage />}
+          />
+          <Route
+            path="/profile"
+            element={<ProfilePage />}
           />
         </Routes>
       </Layout>

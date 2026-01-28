@@ -26,6 +26,12 @@ class UserInDB(UserResponse):
     password: str
 
 
+class UserUpdateRequest(BaseModel):
+    username: Optional[str] = Field(None, min_length=3, max_length=100)
+    current_password: Optional[str] = None
+    new_password: Optional[str] = Field(None, min_length=8, max_length=100)
+
+
 # ==================== Study Schemas ====================
 
 class StudyBase(BaseModel):

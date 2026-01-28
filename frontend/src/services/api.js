@@ -55,6 +55,9 @@ export const authAPI = {
 
   resetPassword: (token, newPassword) =>
     api.post('/auth/reset-password', { token, new_password: newPassword }),
+
+  updateProfile: (data) =>
+    api.put('/auth/me', data),
 };
 
 // ==================== 스터디 API ====================

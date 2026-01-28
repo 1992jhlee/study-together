@@ -18,7 +18,7 @@ export const Layout = ({ children }) => {
             {user ? (
               <>
                 <NotificationBell />
-                <span className="navbar-user">👤 {user.username}</span>
+                <a href="/profile" className="navbar-user" style={{ textDecoration: 'none', cursor: 'pointer' }}>👤 {user.username}</a>
                 <button onClick={logout} className="btn btn-logout">
                   Logout
                 </button>

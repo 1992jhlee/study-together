@@ -39,6 +39,8 @@ const NotificationBell = () => {
       navigate(`/study/${notification.study_id}/posts/${notification.post_id}`);
     } else if (notification.issue_id && notification.study_id) {
       navigate(`/study/${notification.study_id}/issues/${notification.issue_id}`);
+    } else if (notification.study_id) {
+      navigate(`/study/${notification.study_id}`);
     }
 
     setIsOpen(false);
@@ -60,7 +62,9 @@ const NotificationBell = () => {
   };
 
   const formatTime = (dateString) => {
-    const date = new Date(dateString);
+    // 백엔드에서 UTC로 저장하므로 'Z' 접미사가 없으면 추가
+    const utcString = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    const date = new Date(utcString);
     const now = new Date();
     const diff = now - date;
 
@@ -72,7 +76,7 @@ const NotificationBell = () => {
     if (minutes < 60) return `${minutes}분 전`;
     if (hours < 24) return `${hours}시간 전`;
     if (days < 7) return `${days}일 전`;
-    return date.toLocaleDateString('ko-KR');
+    return date.toLocaleDateString('ko-KR', { timeZone: 'Asia/Seoul' });
   };
 
   return (

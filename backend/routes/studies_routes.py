@@ -9,6 +9,7 @@ from schemas import (
     PaginatedResponse, JoinRequestResponse
 )
 from auth import get_current_user, get_current_user_optional
+from notification_utils import create_notification
 
 router = APIRouter(prefix="/studies", tags=["studies"])
 
@@ -407,6 +408,22 @@ async def create_join_request(
     db.commit()
     db.refresh(join_request)
 
+    # 스터디 관리자들에게 알림 전송
+    admins = db.query(StudyMember).filter(
+        StudyMember.study_id == study_id,
+        StudyMember.role == "admin"
+    ).all()
+    for admin in admins:
+        create_notification(
+            db=db,
+            user_id=admin.user_id,
+            notification_type="join_request",
+            message=f"{current_user.username}님이 '{study.name}' 스터디에 가입을 요청했습니다",
+            study_id=study_id,
+            from_user_id=current_user.id
+        )
+    db.commit()
+
     return {"id": join_request.id, "status": "pending", "message": "가입 요청이 전송되었습니다"}
 
 
@@ -495,6 +512,16 @@ async def approve_join_request(
         role="member"
     )
     db.add(new_member)
+
+    # 요청자에게 승인 알림 전송
+    create_notification(
+        db=db,
+        user_id=join_request.user_id,
+        notification_type="join_approved",
+        message=f"'{study.name}' 스터디 가입 요청이 승인되었습니다",
+        study_id=study_id,
+        from_user_id=current_user.id
+    )
     db.commit()
 
     return {"message": "가입 요청이 승인되었습니다"}
@@ -534,6 +561,16 @@ async def reject_join_request(
     join_request.status = "rejected"
     join_request.reviewed_at = datetime.utcnow()
     join_request.reviewed_by = current_user.id
+
+    # 요청자에게 거절 알림 전송
+    create_notification(
+        db=db,
+        user_id=join_request.user_id,
+        notification_type="join_rejected",
+        message=f"'{study.name}' 스터디 가입 요청이 거절되었습니다",
+        study_id=study_id,
+        from_user_id=current_user.id
+    )
     db.commit()
 
     return {"message": "가입 요청이 거절되었습니다"}
