@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from database import get_db, Study, User, StudyMember, Post, Issue
+from database import get_db, Study, User, StudyMember, Post, Issue, Comment, Notification
 from schemas import (
     StudyCreate, StudyUpdate, StudyResponse, StudyDetailResponse,
     StudyMemberCreate, StudyMemberResponse, StudyMemberWithUserResponse,
@@ -88,12 +88,20 @@ async def create_study(
     - **name**: 스터디 이름
     - **description**: 스터디 설명 (선택사항)
     """
+    # 스터디 이름 중복 체크
+    existing = db.query(Study).filter(Study.name == study.name).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="이미 같은 이름의 스터디가 존재합니다"
+        )
+
     db_study = Study(
         name=study.name,
         description=study.description,
         creator_id=current_user.id
     )
-    
+
     db.add(db_study)
     db.commit()
     db.refresh(db_study)
@@ -175,7 +183,23 @@ async def delete_study(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized to delete this study"
         )
-    
+
+    # 관련 알림 삭제
+    db.query(Notification).filter(Notification.study_id == study_id).delete()
+    # 게시물/이슈의 댓글 삭제
+    post_ids = [p.id for p in db.query(Post).filter(Post.study_id == study_id).all()]
+    issue_ids = [i.id for i in db.query(Issue).filter(Issue.study_id == study_id).all()]
+    if post_ids:
+        db.query(Notification).filter(Notification.post_id.in_(post_ids)).delete(synchronize_session=False)
+        db.query(Comment).filter(Comment.post_id.in_(post_ids)).delete(synchronize_session=False)
+    if issue_ids:
+        db.query(Notification).filter(Notification.issue_id.in_(issue_ids)).delete(synchronize_session=False)
+        db.query(Comment).filter(Comment.issue_id.in_(issue_ids)).delete(synchronize_session=False)
+    # 게시물, 이슈, 멤버 삭제
+    db.query(Post).filter(Post.study_id == study_id).delete()
+    db.query(Issue).filter(Issue.study_id == study_id).delete()
+    db.query(StudyMember).filter(StudyMember.study_id == study_id).delete()
+    # 스터디 삭제
     db.delete(db_study)
     db.commit()
 
