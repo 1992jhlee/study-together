@@ -10,6 +10,7 @@ Base URL: `/api`
 | POST | `/auth/login` | 로그인 | - |
 | POST | `/auth/logout` | 로그아웃 | O |
 | GET | `/auth/me` | 현재 사용자 정보 | O |
+| PUT | `/auth/me` | 프로필 수정 (사용자명/비밀번호) | O |
 | POST | `/auth/forgot-password` | 비밀번호 재설정 이메일 발송 | - |
 | POST | `/auth/reset-password` | 비밀번호 재설정 | - |
 
@@ -30,6 +31,23 @@ Base URL: `/api`
 // Response 200
 { "access_token": "...", "token_type": "bearer", "user": { "id": 1, "email": "...", "username": "..." } }
 ```
+
+### PUT /auth/me
+```json
+// Request (사용자명만 변경)
+{ "username": "새로운이름" }
+
+// Request (비밀번호 변경)
+{ "current_password": "현재비밀번호", "new_password": "새비밀번호123" }
+
+// Request (사용자명 + 비밀번호 동시 변경)
+{ "username": "새로운이름", "current_password": "현재비밀번호", "new_password": "새비밀번호123" }
+
+// Response 200
+{ "id": 1, "email": "user@example.com", "username": "새로운이름", "created_at": "..." }
+```
+- 비밀번호 변경 시 현재 비밀번호 필수
+- 현재 비밀번호 불일치 시 400 에러
 
 ### POST /auth/forgot-password
 ```json
@@ -148,6 +166,7 @@ Query: skip=0, limit=10
 ```
 - 이미 멤버인 경우 400 에러
 - 이미 대기 중인 요청이 있는 경우 400 에러
+- 스터디 관리자에게 `join_request` 알림 전송
 
 ### GET /studies/{study_id}/join-requests
 ```json
@@ -174,12 +193,14 @@ Query: skip=0, limit=10
 { "message": "가입 요청이 승인되었습니다" }
 ```
 - 승인 시 자동으로 멤버(member 역할)에 추가됨
+- 요청자에게 `join_approved` 알림 전송
 
 ### PUT /studies/{study_id}/join-requests/{request_id}/reject
 ```json
 // Response 200
 { "message": "가입 요청이 거절되었습니다" }
 ```
+- 요청자에게 `join_rejected` 알림 전송
 
 ---
 
@@ -387,6 +408,18 @@ Authorization: Bearer <access_token>
 | 403 | 권한 없음 |
 | 404 | 리소스 없음 |
 | 422 | 요청 데이터 검증 실패 |
+
+### 알림 유형 (notification_type)
+
+| 유형 | 설명 | 트리거 |
+|------|------|--------|
+| `post_comment` | 게시물 댓글 알림 | 댓글 작성 시 게시물 작성자에게 |
+| `issue_comment` | 이슈 댓글 알림 | 댓글 작성 시 이슈 작성자에게 |
+| `new_post` | 새 게시물 알림 | 게시물 생성 시 스터디 멤버에게 |
+| `new_issue` | 새 이슈 알림 | 이슈 생성 시 스터디 멤버에게 |
+| `join_request` | 가입 요청 알림 | 가입 요청 시 스터디 관리자에게 |
+| `join_approved` | 가입 승인 알림 | 가입 승인 시 요청자에게 |
+| `join_rejected` | 가입 거절 알림 | 가입 거절 시 요청자에게 |
 
 ### 페이지네이션
 대부분의 목록 API는 `skip`과 `limit` 쿼리 파라미터를 지원합니다.
