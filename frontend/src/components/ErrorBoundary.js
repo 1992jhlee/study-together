@@ -53,9 +53,9 @@ class ErrorBoundary extends Component {
               </button>
             </div>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {this.state.error && (
               <details className="error-details">
-                <summary>오류 상세 정보 (개발 모드)</summary>
+                <summary>오류 상세 정보</summary>
                 <div className="error-stack">
                   <h4>Error:</h4>
                   <pre>{this.state.error.toString()}</pre>

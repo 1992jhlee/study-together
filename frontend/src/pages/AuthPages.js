@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/Auth.css';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, loading } = useAuth();
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [formError, setFormError] = useState('');
+  const [successMsg] = useState(location.state?.registered ? '환영합니다! 회원가입이 완료되었습니다. 로그인해주세요.' : '');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -39,7 +41,8 @@ export const LoginPage = () => {
     <div className="auth-container">
       <div className="auth-card">
         <h2>Login</h2>
-        
+
+        {successMsg && <div className="success-message">{successMsg}</div>}
         {formError && <div className="error-message">{formError}</div>}
         
         <form onSubmit={handleSubmit}>
@@ -124,9 +127,7 @@ export const RegisterPage = () => {
 
     try {
       await register(formData.email, formData.username, formData.password);
-      // 성공 팝업
-      alert('환영합니다! 회원가입이 완료되었습니다.');
-      navigate('/login');
+      navigate('/login', { state: { registered: true } });
     } catch (err) {
       setFormError(err.response?.data?.detail || 'Registration failed');
     }
