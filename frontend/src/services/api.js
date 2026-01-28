@@ -23,8 +23,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // 인증 오류 시 로그아웃
+    const url = error.config?.url || '';
+    const isAuthEndpoint = url.includes('/auth/login') || url.includes('/auth/register');
+    if (error.response?.status === 401 && !isAuthEndpoint) {
+      // 인증 오류 시 로그아웃 (로그인/회원가입 요청 제외)
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');
       window.location.href = '/login';
