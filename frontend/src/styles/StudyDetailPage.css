@@ -337,6 +337,70 @@
   cursor: not-allowed;
 }
 
+/* ==================== Join Requests ====================*/
+.join-requests-section {
+  background: white;
+  border: 1px solid #17a2b8;
+  border-radius: 6px;
+  padding: 25px;
+  margin-top: 30px;
+  box-shadow: 0 2px 4px rgba(23, 162, 184, 0.1);
+}
+
+.join-requests-section h2 {
+  margin: 0 0 15px 0;
+  font-size: 18px;
+  color: #17a2b8;
+}
+
+.join-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.join-request-card {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  padding: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.join-request-info {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.join-request-username {
+  font-weight: 600;
+  color: #333;
+}
+
+.join-request-email {
+  color: #666;
+  font-size: 13px;
+}
+
+.join-request-date {
+  color: #999;
+  font-size: 12px;
+}
+
+.join-request-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
 /* ==================== Danger Zone ====================*/
 .danger-zone {
   background: white;

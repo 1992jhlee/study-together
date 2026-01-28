@@ -20,6 +20,7 @@ const StudyDetailPage = () => {
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [showAddMemberForm, setShowAddMemberForm] = useState(false);
+  const [joinRequests, setJoinRequests] = useState([]);
 
   // Edit mode states
   const [isEditing, setIsEditing] = useState(false);
@@ -51,10 +52,44 @@ const StudyDetailPage = () => {
 
       const membersRes = await studiesAPI.getMembers(studyId);
       setMembers(membersRes.data.items || membersRes.data);
+
+      // 관리자인 경우 가입 요청 조회
+      if (studyRes.data.creator_id === user?.id) {
+        fetchJoinRequests();
+      }
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to load study details');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchJoinRequests = async () => {
+    try {
+      const res = await studiesAPI.getJoinRequests(studyId);
+      setJoinRequests(res.data.items || []);
+    } catch (err) {
+      // 권한 없으면 무시
+    }
+  };
+
+  const handleApproveRequest = async (requestId) => {
+    try {
+      await studiesAPI.approveJoinRequest(studyId, requestId);
+      toast.success('가입 요청을 승인했습니다.');
+      fetchStudyDetail();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || '승인에 실패했습니다.');
+    }
+  };
+
+  const handleRejectRequest = async (requestId) => {
+    try {
+      await studiesAPI.rejectJoinRequest(studyId, requestId);
+      toast.success('가입 요청을 거절했습니다.');
+      fetchJoinRequests();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || '거절에 실패했습니다.');
     }
   };
 
@@ -309,6 +344,40 @@ const StudyDetailPage = () => {
           )}
         </div>
       </section>
+
+      {/* Join Requests Section - Only visible to creator/admin */}
+      {isCreator && joinRequests.length > 0 && (
+        <section className="join-requests-section">
+          <h2>가입 요청 ({joinRequests.length})</h2>
+          <div className="join-requests-list">
+            {joinRequests.map(req => (
+              <div key={req.id} className="join-request-card">
+                <div className="join-request-info">
+                  <span className="join-request-username">👤 {req.username}</span>
+                  <span className="join-request-email">{req.email}</span>
+                  <span className="join-request-date">
+                    {new Date(req.created_at).toLocaleDateString('ko-KR')}
+                  </span>
+                </div>
+                <div className="join-request-actions">
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => handleApproveRequest(req.id)}
+                  >
+                    승인
+                  </button>
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => handleRejectRequest(req.id)}
+                  >
+                    거절
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Delete Study Section - Only visible to creator */}
       {isCreator && (

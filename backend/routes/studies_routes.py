@@ -2,11 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 
-from database import get_db, Study, User, StudyMember, Post, Issue, Comment, Notification
+from database import get_db, Study, User, StudyMember, Post, Issue, Comment, Notification, JoinRequest
 from schemas import (
     StudyCreate, StudyUpdate, StudyResponse, StudyDetailResponse,
     StudyMemberCreate, StudyMemberResponse, StudyMemberWithUserResponse,
-    PaginatedResponse
+    PaginatedResponse, JoinRequestResponse
 )
 from auth import get_current_user, get_current_user_optional
 
@@ -34,15 +34,23 @@ async def get_studies(
     for study in studies:
         member_count = db.query(StudyMember).filter(StudyMember.study_id == study.id).count()
         is_member = False
+        has_pending_request = False
         if current_user:
             is_member = db.query(StudyMember).filter(
                 StudyMember.study_id == study.id,
                 StudyMember.user_id == current_user.id
             ).first() is not None
+            if not is_member:
+                has_pending_request = db.query(JoinRequest).filter(
+                    JoinRequest.study_id == study.id,
+                    JoinRequest.user_id == current_user.id,
+                    JoinRequest.status == "pending"
+                ).first() is not None
         items.append({
             **StudyResponse.from_orm(study).dict(),
             "member_count": member_count,
-            "is_member": is_member
+            "is_member": is_member,
+            "has_pending_request": has_pending_request
         })
 
     return {"total": total, "items": items}
@@ -203,10 +211,11 @@ async def delete_study(
     if issue_ids:
         db.query(Notification).filter(Notification.issue_id.in_(issue_ids)).delete(synchronize_session=False)
         db.query(Comment).filter(Comment.issue_id.in_(issue_ids)).delete(synchronize_session=False)
-    # 게시물, 이슈, 멤버 삭제
+    # 게시물, 이슈, 멤버, 가입 요청 삭제
     db.query(Post).filter(Post.study_id == study_id).delete()
     db.query(Issue).filter(Issue.study_id == study_id).delete()
     db.query(StudyMember).filter(StudyMember.study_id == study_id).delete()
+    db.query(JoinRequest).filter(JoinRequest.study_id == study_id).delete()
     # 스터디 삭제
     db.delete(db_study)
     db.commit()
@@ -355,3 +364,176 @@ async def remove_study_member(
 
     db.delete(member)
     db.commit()
+
+
+# ==================== 가입 요청 생성 ====================
+@router.post("/{study_id}/join-requests", status_code=status.HTTP_201_CREATED)
+async def create_join_request(
+    study_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    스터디 가입 요청
+    """
+    study = db.query(Study).filter(Study.id == study_id).first()
+    if not study:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Study not found")
+
+    # 이미 멤버인지 확인
+    existing_member = db.query(StudyMember).filter(
+        and_(StudyMember.study_id == study_id, StudyMember.user_id == current_user.id)
+    ).first()
+    if existing_member:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 스터디 멤버입니다")
+
+    # 이미 대기 중인 요청이 있는지 확인
+    existing_request = db.query(JoinRequest).filter(
+        and_(
+            JoinRequest.study_id == study_id,
+            JoinRequest.user_id == current_user.id,
+            JoinRequest.status == "pending"
+        )
+    ).first()
+    if existing_request:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="이미 가입 요청이 대기 중입니다")
+
+    join_request = JoinRequest(
+        study_id=study_id,
+        user_id=current_user.id,
+        status="pending"
+    )
+    db.add(join_request)
+    db.commit()
+    db.refresh(join_request)
+
+    return {"id": join_request.id, "status": "pending", "message": "가입 요청이 전송되었습니다"}
+
+
+# ==================== 가입 요청 목록 조회 (관리자) ====================
+@router.get("/{study_id}/join-requests", response_model=dict)
+async def get_join_requests(
+    study_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    스터디 가입 요청 목록 조회 (관리자만 가능)
+    """
+    study = db.query(Study).filter(Study.id == study_id).first()
+    if not study:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Study not found")
+
+    # 관리자 권한 확인
+    member = db.query(StudyMember).filter(
+        and_(StudyMember.study_id == study_id, StudyMember.user_id == current_user.id)
+    ).first()
+    if not member or member.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자만 가입 요청을 조회할 수 있습니다")
+
+    requests = db.query(JoinRequest).filter(
+        JoinRequest.study_id == study_id,
+        JoinRequest.status == "pending"
+    ).all()
+
+    items = []
+    for req in requests:
+        user = db.query(User).filter(User.id == req.user_id).first()
+        items.append({
+            "id": req.id,
+            "study_id": req.study_id,
+            "user_id": req.user_id,
+            "username": user.username if user else "Unknown",
+            "email": user.email if user else "",
+            "status": req.status,
+            "created_at": req.created_at.isoformat()
+        })
+
+    return {"total": len(items), "items": items}
+
+
+# ==================== 가입 요청 승인 ====================
+@router.put("/{study_id}/join-requests/{request_id}/approve")
+async def approve_join_request(
+    study_id: int,
+    request_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    가입 요청 승인 (관리자만 가능)
+    """
+    study = db.query(Study).filter(Study.id == study_id).first()
+    if not study:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Study not found")
+
+    # 관리자 권한 확인
+    member = db.query(StudyMember).filter(
+        and_(StudyMember.study_id == study_id, StudyMember.user_id == current_user.id)
+    ).first()
+    if not member or member.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자만 가입 요청을 승인할 수 있습니다")
+
+    join_request = db.query(JoinRequest).filter(
+        JoinRequest.id == request_id,
+        JoinRequest.study_id == study_id,
+        JoinRequest.status == "pending"
+    ).first()
+    if not join_request:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="가입 요청을 찾을 수 없습니다")
+
+    # 요청 승인
+    from datetime import datetime
+    join_request.status = "approved"
+    join_request.reviewed_at = datetime.utcnow()
+    join_request.reviewed_by = current_user.id
+
+    # 멤버로 추가
+    new_member = StudyMember(
+        study_id=study_id,
+        user_id=join_request.user_id,
+        role="member"
+    )
+    db.add(new_member)
+    db.commit()
+
+    return {"message": "가입 요청이 승인되었습니다"}
+
+
+# ==================== 가입 요청 거절 ====================
+@router.put("/{study_id}/join-requests/{request_id}/reject")
+async def reject_join_request(
+    study_id: int,
+    request_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    가입 요청 거절 (관리자만 가능)
+    """
+    study = db.query(Study).filter(Study.id == study_id).first()
+    if not study:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Study not found")
+
+    # 관리자 권한 확인
+    member = db.query(StudyMember).filter(
+        and_(StudyMember.study_id == study_id, StudyMember.user_id == current_user.id)
+    ).first()
+    if not member or member.role != "admin":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="관리자만 가입 요청을 거절할 수 있습니다")
+
+    join_request = db.query(JoinRequest).filter(
+        JoinRequest.id == request_id,
+        JoinRequest.study_id == study_id,
+        JoinRequest.status == "pending"
+    ).first()
+    if not join_request:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="가입 요청을 찾을 수 없습니다")
+
+    from datetime import datetime
+    join_request.status = "rejected"
+    join_request.reviewed_at = datetime.utcnow()
+    join_request.reviewed_by = current_user.id
+    db.commit()
+
+    return {"message": "가입 요청이 거절되었습니다"}

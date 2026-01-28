@@ -19,6 +19,7 @@ export const MainPage = () => {
   const [newStudyName, setNewStudyName] = useState('');
   const [newStudyDesc, setNewStudyDesc] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [joiningStudy, setJoiningStudy] = useState(false);
 
   // 스터디 목록 조회
   useEffect(() => {
@@ -74,6 +75,22 @@ export const MainPage = () => {
       toast.success('스터디가 생성되었습니다.');
     } catch (err) {
       toast.error('스터디 생성에 실패했습니다.');
+    }
+  };
+
+  const handleJoinRequest = async () => {
+    if (!selectedStudy) return;
+    setJoiningStudy(true);
+    try {
+      await studiesAPI.createJoinRequest(selectedStudy.id);
+      toast.success('가입 요청이 전송되었습니다.');
+      setSelectedStudy({ ...selectedStudy, has_pending_request: true });
+      // 스터디 목록도 갱신
+      fetchStudies();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || '가입 요청에 실패했습니다.');
+    } finally {
+      setJoiningStudy(false);
     }
   };
 
@@ -169,20 +186,29 @@ export const MainPage = () => {
                   <ReactMarkdown>{selectedStudy.description || ''}</ReactMarkdown>
                 </div>
                 <div className="study-actions">
-                  {selectedStudy.is_member && (
-                    <button
-                      className="btn btn-secondary"
-                      onClick={() => navigate(`/study/${selectedStudy.id}/posts`)}
-                    >
-                      📝 View Posts
-                    </button>
-                  )}
+                  <button
+                    className={`btn btn-secondary ${!selectedStudy.is_member ? 'btn-disabled' : ''}`}
+                    onClick={() => selectedStudy.is_member && navigate(`/study/${selectedStudy.id}/posts`)}
+                    disabled={!selectedStudy.is_member}
+                    title={!selectedStudy.is_member ? '멤버만 볼 수 있습니다' : ''}
+                  >
+                    📝 View Posts
+                  </button>
                   <button
                     className="btn btn-secondary"
                     onClick={() => navigate(`/study/${selectedStudy.id}`)}
                   >
                     👥 Study Info
                   </button>
+                  {!selectedStudy.is_member && (
+                    <button
+                      className="btn btn-join"
+                      onClick={handleJoinRequest}
+                      disabled={joiningStudy || selectedStudy.has_pending_request}
+                    >
+                      {selectedStudy.has_pending_request ? '⏳ 요청 대기 중' : '✋ 가입 요청'}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -276,7 +302,11 @@ export const MainPage = () => {
               ) : (
                 <div className="empty-state">
                   <p>스터디 멤버만 이슈와 게시물을 볼 수 있습니다.</p>
-                  <p>Study Info에서 멤버 가입을 요청하세요.</p>
+                  {selectedStudy.has_pending_request ? (
+                    <p>가입 요청이 대기 중입니다. 관리자의 승인을 기다려주세요.</p>
+                  ) : (
+                    <p>위의 "가입 요청" 버튼을 눌러 멤버 가입을 요청하세요.</p>
+                  )}
                 </div>
               )}
             </>

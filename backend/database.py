@@ -127,6 +127,25 @@ class Issue(Base):
     comments = relationship("Comment", back_populates="issue")
 
 
+class JoinRequest(Base):
+    __tablename__ = "join_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+    study_id = Column(Integer, ForeignKey("studies.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    status = Column(String(50), default="pending")  # pending, approved, rejected
+    created_at = Column(DateTime, default=datetime.utcnow)
+    reviewed_at = Column(DateTime, nullable=True)
+    reviewed_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+
+    __table_args__ = (UniqueConstraint('study_id', 'user_id', name='_join_request_study_user_uc'),)
+
+    # Relationships
+    study = relationship("Study")
+    user = relationship("User", foreign_keys=[user_id])
+    reviewer = relationship("User", foreign_keys=[reviewed_by])
+
+
 class Notification(Base):
     __tablename__ = "notifications"
 

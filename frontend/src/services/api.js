@@ -83,6 +83,19 @@ export const studiesAPI = {
 
   removeMember: (studyId, userId) =>
     api.delete(`/studies/${studyId}/members/${userId}`),
+
+  // 가입 요청
+  createJoinRequest: (studyId) =>
+    api.post(`/studies/${studyId}/join-requests`),
+
+  getJoinRequests: (studyId) =>
+    api.get(`/studies/${studyId}/join-requests`),
+
+  approveJoinRequest: (studyId, requestId) =>
+    api.put(`/studies/${studyId}/join-requests/${requestId}/approve`),
+
+  rejectJoinRequest: (studyId, requestId) =>
+    api.put(`/studies/${studyId}/join-requests/${requestId}/reject`),
 };
 
 // ==================== 게시물 API ====================

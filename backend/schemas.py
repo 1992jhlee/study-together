@@ -255,6 +255,21 @@ class NotificationMarkReadRequest(BaseModel):
     notification_ids: Optional[List[int]] = None  # None이면 전체 읽음 처리
 
 
+# ==================== Join Request Schemas ====================
+
+class JoinRequestResponse(BaseModel):
+    id: int
+    study_id: int
+    user_id: int
+    username: Optional[str] = None
+    status: str
+    created_at: datetime
+    reviewed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
 # ==================== Pagination Schemas ====================
 
 class PaginatedResponse(BaseModel):

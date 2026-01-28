@@ -154,6 +154,37 @@
   font-size: 13px;
 }
 
+.study-actions .btn-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.study-actions .btn-disabled:hover {
+  transform: none;
+}
+
+.btn-join {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-join:hover:not(:disabled) {
+  background-color: #138496;
+}
+
+.btn-join:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .issues-filter {
   display: flex;
   gap: 0.5rem;
